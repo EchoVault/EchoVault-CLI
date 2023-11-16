@@ -108,7 +108,7 @@ func main() {
 
 				fmt.Println(decoded)
 
-				if decoded[0] == "OK" {
+				if decoded[0] == "SUBSCRIBE_OK" {
 					// If we're subscribed to a channel, listen for messages from the channel
 					func() {
 						for {
