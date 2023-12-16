@@ -6,8 +6,6 @@ import (
 	"encoding/csv"
 	"errors"
 	"fmt"
-	"math"
-	"reflect"
 	"strings"
 
 	"github.com/tidwall/resp"
@@ -20,29 +18,6 @@ func Contains[T comparable](arr []T, elem T) bool {
 		}
 	}
 	return false
-}
-
-func IsInteger(n float64) bool {
-	return math.Mod(n, 1.0) == 0
-}
-
-func IncrBy(num interface{}, by interface{}) (interface{}, error) {
-	if !Contains[string]([]string{"int", "float64"}, reflect.TypeOf(num).String()) {
-		return nil, errors.New("can only increment number")
-	}
-	if !Contains[string]([]string{"int", "float64"}, reflect.TypeOf(by).String()) {
-		return nil, errors.New("can only increment by number")
-	}
-
-	n, _ := num.(float64)
-	b, _ := by.(float64)
-	res := n + b
-
-	if IsInteger(res) {
-		return int(res), nil
-	}
-
-	return res, nil
 }
 
 func tokenize(comm string) ([]string, error) {
@@ -73,9 +48,9 @@ func Encode(comm string) (string, error) {
 	return str, nil
 }
 
-func Decode(raw string) ([]string, error) {
+func Decode(raw string) ([]resp.Value, error) {
 	rd := resp.NewReader(bytes.NewBufferString(raw))
-	res := []string{}
+	res := []resp.Value{}
 
 	v, _, err := rd.ReadValue()
 
@@ -84,12 +59,12 @@ func Decode(raw string) ([]string, error) {
 	}
 
 	if Contains[string]([]string{"SimpleString", "BulkString", "Integer", "Error"}, v.Type().String()) {
-		return []string{v.String()}, nil
+		return []resp.Value{v}, nil
 	}
 
 	if v.Type().String() == "Array" {
 		for _, elem := range v.Array() {
-			res = append(res, elem.String())
+			res = append(res, elem)
 		}
 	}
 
@@ -115,4 +90,29 @@ func ReadMessage(r *bufio.ReadWriter) (message string, err error) {
 	}
 
 	return fmt.Sprintf("%s\r\n", string(bytes.Join(line, []byte("\r\n")))), nil
+}
+
+func PrintDecoded(arr []resp.Value, indent int) {
+	if len(arr) == 0 {
+		return
+	}
+	if len(arr) == 1 {
+		if Contains([]string{"", "SUBSCRIBE_OK"}, arr[0].String()) {
+			return
+		}
+		for i := 0; i < indent; i++ {
+			fmt.Print(" ")
+		}
+		fmt.Println(arr[0])
+		return
+	}
+	for _, item := range arr {
+		if item.Type().String() == "Array" {
+			PrintDecoded(item.Array(), indent+1)
+			continue
+		}
+		if Contains[string]([]string{"SimpleString", "BulkString", "Integer", "Error"}, item.Type().String()) {
+			PrintDecoded([]resp.Value{item}, indent)
+		}
+	}
 }

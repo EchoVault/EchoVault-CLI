@@ -106,9 +106,9 @@ func main() {
 					continue
 				}
 
-				fmt.Println(decoded)
+				PrintDecoded(decoded, 0)
 
-				if decoded[0] == "SUBSCRIBE_OK" {
+				if decoded[0].String() == "SUBSCRIBE_OK" {
 					// If we're subscribed to a channel, listen for messages from the channel
 					func() {
 						for {
@@ -130,7 +130,7 @@ func main() {
 							} else {
 								connRW.Write([]byte("+ACK\r\n\n"))
 								connRW.Flush()
-								fmt.Println(decoded)
+								PrintDecoded(decoded, 0)
 							}
 						}
 					}()
