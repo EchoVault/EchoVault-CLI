@@ -53,7 +53,6 @@ func GetConfig() Config {
 	} else {
 		conf = Config{
 			TLS:  *tls,
-			Key:  *key,
 			Cert: *cert,
 			Addr: *addr,
 			Port: uint16(*port),
