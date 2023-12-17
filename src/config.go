@@ -19,7 +19,6 @@ type Config struct {
 func GetConfig() Config {
 	// Shared
 	tls := flag.Bool("tls", false, "Start the server in TLS mode. Default is false")
-	key := flag.String("key", "", "The private key file path.")
 	cert := flag.String("cert", "", "The signed certificate file path.")
 	port := flag.Int("port", 7480, "Port to use. Default is 7480")
 	config := flag.String(

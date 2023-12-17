@@ -9,6 +9,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"time"
 )
 
 func main() {
@@ -17,16 +18,20 @@ func main() {
 	var conn net.Conn
 	var err error
 
-	if !conf.TLS {
-		fmt.Println("Starting src in TCP mode...")
+	dialer := net.Dialer{
+		KeepAlive: 200 * time.Millisecond,
+	}
 
-		conn, err = net.Dial("tcp", fmt.Sprintf("%s:%d", conf.Addr, conf.Port))
+	if !conf.TLS {
+		fmt.Println("Establishing TCP connection...")
+
+		conn, err = dialer.Dial("tcp", fmt.Sprintf("%s:%d", conf.Addr, conf.Port))
 		if err != nil {
 			panic(err)
 		}
 	} else {
 		// Dial TLS
-		fmt.Println("Starting src in TLS mode...")
+		fmt.Println("Establishing TLS connection...")
 
 		f, err := os.Open(conf.Cert)
 
@@ -47,9 +52,13 @@ func main() {
 			panic("Failed to parse certificate")
 		}
 
-		conn, err = tls.Dial("tcp", fmt.Sprintf("%s:%d", conf.Addr, conf.Port), &tls.Config{
-			RootCAs: rootCAs,
-		})
+		conn, err = tls.DialWithDialer(
+			&dialer,
+			"tcp",
+			fmt.Sprintf("%s:%d", conf.Addr, conf.Port),
+			&tls.Config{
+				RootCAs: rootCAs,
+			})
 
 		if err != nil {
 			panic(fmt.Sprintf("Handshake Error: %s", err.Error()))
@@ -93,7 +102,7 @@ func main() {
 				message, err := ReadMessage(connRW)
 
 				if err != nil && err == io.EOF {
-					fmt.Println(err)
+					fmt.Println("connection closed")
 					break
 				} else if err != nil {
 					fmt.Println(err)
