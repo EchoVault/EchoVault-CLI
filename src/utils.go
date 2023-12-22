@@ -43,7 +43,7 @@ func Encode(comm string) (string, error) {
 		}
 	}
 
-	str += "\n"
+	str += "\r\n"
 
 	return str, nil
 }
