@@ -117,7 +117,7 @@ func main() {
 
 				PrintDecoded(decoded, 0)
 
-				if decoded[0].String() == "SUBSCRIBE_OK" {
+				if len(decoded) > 0 && decoded[0].String() == "SUBSCRIBE_OK" {
 					// If we're subscribed to a channel, listen for messages from the channel
 					func() {
 						for {
