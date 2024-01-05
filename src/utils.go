@@ -90,6 +90,13 @@ func ReadMessage(r *bufio.ReadWriter) (message string, err error) {
 	return fmt.Sprintf("%s\r\n", string(bytes.Join(line, []byte("\r\n")))), nil
 }
 
+func IsSubscribeResponse(val resp.Value) bool {
+	if val.Type().String() != "SimpleString" {
+		return false
+	}
+	return val.String() == "SUBSCRIBE_OK"
+}
+
 func PrintArray(val resp.Value, initialIndent int) {
 	if len(val.Array()) == 0 {
 		fmt.Println("(empty array)")

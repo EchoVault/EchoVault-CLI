@@ -111,35 +111,35 @@ func main() {
 					continue
 				}
 
-				PrintDecoded(decoded)
+				if IsSubscribeResponse(decoded) {
+					// If we're subscribed to a channel, listen for messages from the channel
+					func() {
+						for {
+							var message string
 
-				// if len(decoded) > 0 && decoded[0].String() == "SUBSCRIBE_OK" {
-				// 	// If we're subscribed to a channel, listen for messages from the channel
-				// 	func() {
-				// 		for {
-				// 			var message string
-				//
-				// 			if msg, err := ReadMessage(connRW); err != nil {
-				// 				if err == io.EOF {
-				// 					return
-				// 				}
-				// 				fmt.Println(err)
-				// 				continue
-				// 			} else {
-				// 				message = msg
-				// 			}
-				//
-				// 			if decoded, err := Decode(message); err != nil {
-				// 				fmt.Println(err)
-				// 				continue
-				// 			} else {
-				// 				connRW.Write([]byte("+ACK\r\n\n"))
-				// 				connRW.Flush()
-				// 				PrintDecoded(decoded)
-				// 			}
-				// 		}
-				// 	}()
-				// }
+							if msg, err := ReadMessage(connRW); err != nil {
+								if err == io.EOF {
+									return
+								}
+								fmt.Println(err)
+								continue
+							} else {
+								message = msg
+							}
+
+							if decoded, err := Decode(message); err != nil {
+								fmt.Println(err)
+								continue
+							} else {
+								connRW.Write([]byte("+ACK\r\n\n"))
+								connRW.Flush()
+								PrintDecoded(decoded)
+							}
+						}
+					}()
+				} else {
+					PrintDecoded(decoded)
+				}
 			}
 		}
 		done <- struct{}{}
