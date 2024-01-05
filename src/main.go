@@ -24,7 +24,6 @@ func main() {
 
 	if !conf.TLS {
 		fmt.Println("Establishing TCP connection...")
-
 		conn, err = dialer.Dial("tcp", fmt.Sprintf("%s:%d", conf.Addr, conf.Port))
 		if err != nil {
 			panic(err)
@@ -34,19 +33,16 @@ func main() {
 		fmt.Println("Establishing TLS connection...")
 
 		f, err := os.Open(conf.Cert)
-
 		if err != nil {
 			panic(err)
 		}
 
 		cert, err := io.ReadAll(bufio.NewReader(f))
-
 		if err != nil {
 			panic(err)
 		}
 
 		rootCAs := x509.NewCertPool()
-
 		ok := rootCAs.AppendCertsFromPEM(cert)
 		if !ok {
 			panic("Failed to parse certificate")
@@ -115,35 +111,35 @@ func main() {
 					continue
 				}
 
-				PrintDecoded(decoded, 0)
+				PrintDecoded(decoded)
 
-				if len(decoded) > 0 && decoded[0].String() == "SUBSCRIBE_OK" {
-					// If we're subscribed to a channel, listen for messages from the channel
-					func() {
-						for {
-							var message string
-
-							if msg, err := ReadMessage(connRW); err != nil {
-								if err == io.EOF {
-									return
-								}
-								fmt.Println(err)
-								continue
-							} else {
-								message = msg
-							}
-
-							if decoded, err := Decode(message); err != nil {
-								fmt.Println(err)
-								continue
-							} else {
-								connRW.Write([]byte("+ACK\r\n\n"))
-								connRW.Flush()
-								PrintDecoded(decoded, 0)
-							}
-						}
-					}()
-				}
+				// if len(decoded) > 0 && decoded[0].String() == "SUBSCRIBE_OK" {
+				// 	// If we're subscribed to a channel, listen for messages from the channel
+				// 	func() {
+				// 		for {
+				// 			var message string
+				//
+				// 			if msg, err := ReadMessage(connRW); err != nil {
+				// 				if err == io.EOF {
+				// 					return
+				// 				}
+				// 				fmt.Println(err)
+				// 				continue
+				// 			} else {
+				// 				message = msg
+				// 			}
+				//
+				// 			if decoded, err := Decode(message); err != nil {
+				// 				fmt.Println(err)
+				// 				continue
+				// 			} else {
+				// 				connRW.Write([]byte("+ACK\r\n\n"))
+				// 				connRW.Flush()
+				// 				PrintDecoded(decoded)
+				// 			}
+				// 		}
+				// 	}()
+				// }
 			}
 		}
 		done <- struct{}{}
