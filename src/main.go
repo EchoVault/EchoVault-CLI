@@ -131,7 +131,7 @@ func main() {
 								fmt.Println(err)
 								continue
 							} else {
-								connRW.Write([]byte("+ACK\r\n\n"))
+								connRW.Write([]byte("+ACK\r\n\r\n"))
 								connRW.Flush()
 								PrintDecoded(decoded)
 							}
