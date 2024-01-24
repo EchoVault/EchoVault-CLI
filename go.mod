@@ -1,4 +1,4 @@
-module github.com/echovault/cli
+module github.com/echovault/echovault-cli
 
 go 1.21.4
 
