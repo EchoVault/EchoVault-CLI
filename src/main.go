@@ -18,19 +18,22 @@ func main() {
 	var conn net.Conn
 	var err error
 
+	// Writers & readers for stdio
+	stdout, stdin, stderr := io.Writer(os.Stdin), io.Reader(os.Stdout), io.Writer(os.Stderr)
+
 	dialer := net.Dialer{
 		KeepAlive: 200 * time.Millisecond,
 	}
 
 	if !conf.TLS {
-		fmt.Println("Establishing TCP connection...")
+		stdout.Write([]byte("Establishing TCP connection...\n"))
 		conn, err = dialer.Dial("tcp", fmt.Sprintf("%s:%d", conf.Addr, conf.Port))
 		if err != nil {
 			panic(err)
 		}
 	} else {
 		// Dial TLS
-		fmt.Println("Establishing TLS connection...")
+		stdout.Write([]byte("Establishing TLS connection...\n"))
 
 		f, err := os.Open(conf.Cert)
 		if err != nil {
@@ -68,20 +71,16 @@ func main() {
 	// Writers & readers for connection
 	cw, cr := io.Writer(conn), io.Reader(conn)
 
-	// Writers & readers for stdio
-	stdout, stdin, stderr := io.Writer(os.Stdin), io.Reader(os.Stdout), io.Writer(os.Stderr)
-
 	go func() {
 		for {
 			stdout.Write([]byte("\n> "))
 
 			if in, err := ReadMessage(stdin, []byte{'\n'}); err != nil {
-				fmt.Println(err)
+				stderr.Write([]byte(err.Error()))
 			} else {
 				in := bytes.TrimSpace(in)
 
-				// Check for quit command
-				if bytes.Equal(bytes.ToLower(in), []byte("quit")) {
+				if bytes.Equal(bytes.ToLower(in), []byte("quit\n\x00\x00\x00")) {
 					break
 				}
 
@@ -101,16 +100,15 @@ func main() {
 				message, err := ReadMessage(cr, []byte{'\r', '\n', '\r', '\n'})
 
 				if err != nil && err == io.EOF {
-					fmt.Println("connection closed")
+					stderr.Write([]byte("connection closed"))
 					break
 				} else if err != nil {
-					fmt.Println(err)
+					stderr.Write([]byte(err.Error()))
 				}
 
 				decoded, err := Decode(message)
-
 				if err != nil {
-					fmt.Println(err)
+					stderr.Write([]byte(err.Error()))
 					continue
 				}
 
@@ -124,7 +122,7 @@ func main() {
 								if err == io.EOF {
 									return
 								}
-								fmt.Println(err)
+								stderr.Write([]byte(err.Error()))
 								continue
 							} else {
 								message = msg
