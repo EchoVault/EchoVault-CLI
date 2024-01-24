@@ -65,15 +65,17 @@ func main() {
 
 	done := make(chan struct{})
 
-	connRW := bufio.NewReadWriter(bufio.NewReader(conn), bufio.NewWriter(conn))
-	stdioRW := bufio.NewReadWriter(bufio.NewReader(os.Stdin), bufio.NewWriter(os.Stdout))
+	// Writers & readers for connection
+	cw, cr := io.Writer(conn), io.Reader(conn)
+
+	// Writers & readers for stdio
+	stdout, stdin, stderr := io.Writer(os.Stdin), io.Reader(os.Stdout), io.Writer(os.Stderr)
 
 	go func() {
 		for {
-			stdioRW.Write([]byte("\n> "))
-			stdioRW.Flush()
+			stdout.Write([]byte("\n> "))
 
-			if in, err := stdioRW.ReadBytes(byte('\n')); err != nil {
+			if in, err := ReadMessage(stdin, []byte{'\n'}); err != nil {
 				fmt.Println(err)
 			} else {
 				in := bytes.TrimSpace(in)
@@ -91,11 +93,12 @@ func main() {
 					continue
 				}
 
-				connRW.Write([]byte(encoded))
-				connRW.Flush()
+				if _, err := cw.Write([]byte(encoded)); err != nil {
+					stderr.Write([]byte(err.Error()))
+				}
 
 				// Read response from server
-				message, err := ReadMessage(connRW)
+				message, err := ReadMessage(cr, []byte{'\r', '\n', '\r', '\n'})
 
 				if err != nil && err == io.EOF {
 					fmt.Println("connection closed")
@@ -115,9 +118,9 @@ func main() {
 					// If we're subscribed to a channel, listen for messages from the channel
 					func() {
 						for {
-							var message string
+							var message []byte
 
-							if msg, err := ReadMessage(connRW); err != nil {
+							if msg, err := ReadMessage(cr, []byte{'\r', '\n', '\r', '\n'}); err != nil {
 								if err == io.EOF {
 									return
 								}
@@ -127,15 +130,15 @@ func main() {
 								message = msg
 							}
 
-							if decoded, err := Decode(message); err != nil {
-								fmt.Println(err)
+							decoded, err := Decode(message)
+							if err != nil {
+								stderr.Write([]byte(err.Error()))
 								continue
-							} else {
-								connRW.Write([]byte("+ACK\r\n\r\n"))
-								connRW.Flush()
-								if !decoded.IsNull() {
-									PrintDecoded(decoded)
-								}
+							}
+
+							cw.Write([]byte("+ACK\r\n\r\n"))
+							if !decoded.IsNull() {
+								PrintDecoded(decoded)
 							}
 						}
 					}()

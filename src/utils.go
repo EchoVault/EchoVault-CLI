@@ -1,11 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
 	"encoding/csv"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/tidwall/resp"
@@ -48,8 +48,8 @@ func Encode(comm string) (string, error) {
 	return str, nil
 }
 
-func Decode(raw string) (resp.Value, error) {
-	rd := resp.NewReader(bytes.NewBufferString(raw))
+func Decode(raw []byte) (resp.Value, error) {
+	rd := resp.NewReader(bytes.NewBuffer(raw))
 	var res resp.Value
 
 	v, _, err := rd.ReadValue()
@@ -69,25 +69,27 @@ func Decode(raw string) (resp.Value, error) {
 	return res, nil
 }
 
-func ReadMessage(r *bufio.ReadWriter) (message string, err error) {
-	var line [][]byte
+func ReadMessage(r io.Reader, delim []byte) ([]byte, error) {
+	buffSize := 8
+	buff := make([]byte, buffSize)
+
+	var n int
+	var err error
+	var res []byte
 
 	for {
-		b, _, err := r.ReadLine()
-
-		if err != nil {
-			return "", err
-		}
-
-		if bytes.Equal(b, []byte("")) {
-			// End of message
+		n, err = r.Read(buff)
+		res = append(res, buff...)
+		if n < buffSize || err != nil {
 			break
 		}
-
-		line = append(line, b)
+		if bytes.Equal(buff[len(buff)-len(delim):], delim) {
+			break
+		}
+		clear(buff)
 	}
 
-	return fmt.Sprintf("%s\r\n", string(bytes.Join(line, []byte("\r\n")))), nil
+	return res, err
 }
 
 func IsSubscribeResponse(val resp.Value) bool {
