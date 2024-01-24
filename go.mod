@@ -1,4 +1,4 @@
-module github.com/kelvinmwinuka/memstore-client-go
+module github.com/echovault/cli
 
 go 1.21.4
 
