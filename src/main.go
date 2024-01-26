@@ -7,6 +7,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"os"
 	"time"
@@ -19,7 +20,7 @@ func main() {
 	var err error
 
 	// Writers & readers for stdio
-	stdout, stdin, stderr := io.Writer(os.Stdin), io.Reader(os.Stdout), io.Writer(os.Stderr)
+	stdout, stdin := io.Writer(os.Stdin), io.Reader(os.Stdout)
 
 	dialer := net.Dialer{
 		KeepAlive: 200 * time.Millisecond,
@@ -76,7 +77,7 @@ func main() {
 			stdout.Write([]byte("\n> "))
 
 			if in, err := ReadMessage(stdin, []byte{'\n'}); err != nil {
-				stderr.Write([]byte(err.Error()))
+				log.Println(err)
 			} else {
 				in := bytes.TrimSpace(in)
 
@@ -93,22 +94,22 @@ func main() {
 				}
 
 				if _, err := cw.Write([]byte(encoded)); err != nil {
-					stderr.Write([]byte(err.Error()))
+					log.Println(err)
 				}
 
 				// Read response from server
 				message, err := ReadMessage(cr, []byte{'\r', '\n', '\r', '\n'})
 
 				if err != nil && err == io.EOF {
-					stderr.Write([]byte("connection closed"))
+					log.Println("connection closed")
 					break
 				} else if err != nil {
-					stderr.Write([]byte(err.Error()))
+					log.Println(err)
 				}
 
 				decoded, err := Decode(message)
 				if err != nil {
-					stderr.Write([]byte(err.Error()))
+					log.Println(err)
 					continue
 				}
 
@@ -122,7 +123,7 @@ func main() {
 								if err == io.EOF {
 									return
 								}
-								stderr.Write([]byte(err.Error()))
+								log.Println(err)
 								continue
 							} else {
 								message = msg
@@ -130,7 +131,7 @@ func main() {
 
 							decoded, err := Decode(message)
 							if err != nil {
-								stderr.Write([]byte(err.Error()))
+								log.Println(err)
 								continue
 							}
 
