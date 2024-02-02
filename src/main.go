@@ -34,31 +34,40 @@ func main() {
 		}
 	} else {
 		// Dial TLS
-		stdout.Write([]byte("Establishing TLS connection...\n"))
-
-		f, err := os.Open(conf.Cert)
-		if err != nil {
-			panic(err)
+		if _, err = stdout.Write([]byte("Establishing TLS connection...\n")); err != nil {
+			log.Println(err)
 		}
 
-		cert, err := io.ReadAll(bufio.NewReader(f))
-		if err != nil {
-			panic(err)
+		var certificates []tls.Certificate
+		for _, certKeyPair := range conf.CertKeyPairs {
+			c, err := tls.LoadX509KeyPair(certKeyPair[0], certKeyPair[1])
+			if err != nil {
+				log.Fatal(err)
+			}
+			certificates = append(certificates, c)
 		}
 
-		rootCAs := x509.NewCertPool()
-		ok := rootCAs.AppendCertsFromPEM(cert)
-		if !ok {
-			panic("Failed to parse certificate")
+		serverCAs := x509.NewCertPool()
+		for _, authority := range conf.ServerCAs {
+			f, err := os.Open(authority)
+			if err != nil {
+				panic(err)
+			}
+			cert, err := io.ReadAll(bufio.NewReader(f))
+			if err != nil {
+				panic(err)
+			}
+			ok := serverCAs.AppendCertsFromPEM(cert)
+			if !ok {
+				panic("Failed to parse certificate")
+			}
 		}
 
-		conn, err = tls.DialWithDialer(
-			&dialer,
-			"tcp",
-			fmt.Sprintf("%s:%d", conf.Addr, conf.Port),
-			&tls.Config{
-				RootCAs: rootCAs,
-			})
+		conn, err = tls.DialWithDialer(&dialer, "tcp", fmt.Sprintf("%s:%d", conf.Addr, conf.Port), &tls.Config{
+			RootCAs:      serverCAs,
+			Certificates: certificates,
+			MinVersion:   tls.VersionTLS13,
+		})
 
 		if err != nil {
 			panic(fmt.Sprintf("Handshake Error: %s", err.Error()))

@@ -2,25 +2,52 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"flag"
 	yaml "gopkg.in/yaml.v3"
+	"log"
 	"os"
 	"path"
+	"strings"
 )
 
 type Config struct {
-	TLS  bool   `json:"tls" yaml:"tls"`
-	Key  string `json:"key" yaml:"key"`
-	Cert string `json:"cert" yaml:"cert"`
-	Port uint16 `json:"port" yaml:"port"`
-	Addr string `json:"addr" yaml:"addr"`
+	TLS          bool       `json:"TLS" yaml:"TLS"`
+	MTLS         bool       `json:"MTLS" yaml:"MTLS"`
+	CertKeyPairs [][]string `json:"CertKeyPairs" yaml:"CertKeyPairs"`
+	ServerCAs    []string   `json:"ServerCAs" yaml:"ServerCAs"`
+	Port         uint16     `json:"Port" yaml:"Port"`
+	Addr         string     `json:"Addr" yaml:"Addr"`
 }
 
 func GetConfig() Config {
-	// Shared
-	tls := flag.Bool("tls", false, "Start the server in TLS mode. Default is false")
-	cert := flag.String("cert", "", "The signed certificate file path.")
-	port := flag.Int("port", 7480, "Port to use. Default is 7480")
+	var certKeyPairs [][]string
+	var serverCAs []string
+
+	flag.Func("certKeyPair",
+		"A cert/key pair used by the server to verify the client. The value is 2 comma separated file paths.",
+		func(s string) error {
+			pair := strings.Split(strings.TrimSpace(s), ",")
+			for i := 0; i < len(pair); i++ {
+				pair[i] = strings.TrimSpace(pair[i])
+			}
+			if len(pair) != 2 {
+				return errors.New("certKeyPair must be 2 comma separated file paths")
+			}
+			certKeyPairs = append(certKeyPairs, pair)
+			return nil
+		})
+
+	flag.Func("serverCA",
+		"A file path to a root CA used by the client to verify the server.",
+		func(s string) error {
+			serverCAs = append(serverCAs, s)
+			return nil
+		})
+
+	tls := flag.Bool("tls", false, "Start the server in TLS mode. Default is false.")
+	mtls := flag.Bool("mtls", false, "Use mTLS to verify the client with the server.")
+	port := flag.Int("port", 7480, "Port to use. Default is 7480.")
 	config := flag.String(
 		"config",
 		"",
@@ -34,29 +61,36 @@ func GetConfig() Config {
 
 	if len(*config) > 0 {
 		// Load config from config file
-		if f, err := os.Open(*config); err != nil {
+		f, err := os.Open(*config)
+		if err != nil {
 			panic(err)
-		} else {
-			defer f.Close()
-
-			ext := path.Ext(f.Name())
-
-			if ext == ".json" {
-				json.NewDecoder(f).Decode(&conf)
+		}
+		defer func() {
+			if err = f.Close(); err != nil {
+				log.Println(err)
 			}
+		}()
 
-			if ext == ".yaml" || ext == ".yml" {
-				yaml.NewDecoder(f).Decode(&conf)
-			}
+		ext := path.Ext(f.Name())
+
+		if ext == ".json" {
+			json.NewDecoder(f).Decode(&conf)
 		}
 
-	} else {
-		conf = Config{
-			TLS:  *tls,
-			Cert: *cert,
-			Addr: *addr,
-			Port: uint16(*port),
+		if ext == ".yaml" || ext == ".yml" {
+			yaml.NewDecoder(f).Decode(&conf)
 		}
+
+		return conf
+	}
+
+	conf = Config{
+		CertKeyPairs: certKeyPairs,
+		ServerCAs:    serverCAs,
+		TLS:          *tls,
+		MTLS:         *mtls,
+		Addr:         *addr,
+		Port:         uint16(*port),
 	}
 
 	return conf
