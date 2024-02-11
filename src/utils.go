@@ -6,19 +6,11 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 
 	"github.com/tidwall/resp"
 )
-
-func Contains[T comparable](arr []T, elem T) bool {
-	for _, v := range arr {
-		if v == elem {
-			return true
-		}
-	}
-	return false
-}
 
 func tokenize(comm string) ([]string, error) {
 	r := csv.NewReader(strings.NewReader(comm))
@@ -58,7 +50,7 @@ func Decode(raw []byte) (resp.Value, error) {
 		return resp.Value{}, err
 	}
 
-	if Contains[string]([]string{"SimpleString", "BulkString", "Integer", "Error"}, v.Type().String()) {
+	if slices.Contains([]string{"SimpleString", "BulkString", "Integer", "Error"}, v.Type().String()) {
 		return v, nil
 	}
 
