@@ -26,13 +26,7 @@ func main() {
 		KeepAlive: 200 * time.Millisecond,
 	}
 
-	if !conf.TLS {
-		stdout.Write([]byte("Establishing TCP connection...\n"))
-		conn, err = dialer.Dial("tcp", fmt.Sprintf("%s:%d", conf.Addr, conf.Port))
-		if err != nil {
-			panic(err)
-		}
-	} else {
+	if conf.TLS || conf.MTLS {
 		// Dial TLS
 		if _, err = stdout.Write([]byte("Establishing TLS connection...\n")); err != nil {
 			log.Println(err)
@@ -66,11 +60,16 @@ func main() {
 		conn, err = tls.DialWithDialer(&dialer, "tcp", fmt.Sprintf("%s:%d", conf.Addr, conf.Port), &tls.Config{
 			RootCAs:      serverCAs,
 			Certificates: certificates,
-			MinVersion:   tls.VersionTLS13,
 		})
 
 		if err != nil {
 			panic(fmt.Sprintf("Handshake Error: %s", err.Error()))
+		}
+	} else {
+		stdout.Write([]byte("Establishing TCP connection...\n"))
+		conn, err = dialer.Dial("tcp", fmt.Sprintf("%s:%d", conf.Addr, conf.Port))
+		if err != nil {
+			panic(err)
 		}
 	}
 
