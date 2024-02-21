@@ -109,6 +109,10 @@ func PrintArray(val resp.Value, initialIndent int) {
 			PrintArray(item, initialIndent+len(pos))
 			continue
 		}
+		if item.IsNull() {
+			fmt.Println("(nil)")
+			continue
+		}
 		fmt.Println(item)
 	}
 }
