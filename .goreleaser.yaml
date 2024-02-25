@@ -22,7 +22,7 @@ builds:
 brews:
   - name: echovault-cli
     homepage: https://github.com/EchoVault/EchoVault-CLI
-    tap:
+    repository:
       owner: EchoVault
       name: Homebrew-EchoVault
     commit_author:
