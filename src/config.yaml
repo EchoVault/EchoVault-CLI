@@ -1,4 +1,0 @@
-tls: false
-key: openssl/server/private.key
-cert: openssl/server/server.crt
-port: 7480

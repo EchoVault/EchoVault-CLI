@@ -24,7 +24,7 @@ func GetConfig() Config {
 	var certKeyPairs [][]string
 	var serverCAs []string
 
-	flag.Func("certKeyPair",
+	flag.Func("cert-key-pair",
 		"A cert/key pair used by the server to verify the client. The value is 2 comma separated file paths.",
 		func(s string) error {
 			pair := strings.Split(strings.TrimSpace(s), ",")
@@ -38,7 +38,7 @@ func GetConfig() Config {
 			return nil
 		})
 
-	flag.Func("serverCA",
+	flag.Func("server-ca",
 		"A file path to a root CA used by the client to verify the server.",
 		func(s string) error {
 			serverCAs = append(serverCAs, s)
