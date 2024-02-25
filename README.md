@@ -25,4 +25,10 @@ The EchoVault cli client takes the following args:
 3) `--tls` - Boolean flag that instructs the client to establish a TLS connection with the server. Default is `false`.
 4) `--mtls` - Boolean flag the instructs the client to establish an mTLS connection with the server. Default is `false`. If both `--tls` and `--mtls` are provided, `--mtls` will take priority.
 5) `--server-ca` - The certificate authority used to verify the server on a TLS connection.
-6) `--cert-key-pair` - Can specified multiple times. This is the comma-separated cert/key pair that the client will use to verify itself to the server on an mTLS connection. The format is `path/to/cert,path/to/key`
+6) `--cert-key-pair` - Can specified multiple times. This is the comma-separated cert/key pair that the client will use to verify itself to the server on an mTLS connection. The format is `path/to/cert,path/to/key`.
+
+## Commands
+
+If you'd like to see all the available commands, 
+run the following command after connecting to the server:
+`commands`
